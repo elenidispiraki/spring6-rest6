@@ -60,7 +60,7 @@ public class User extends AbstractEntity implements UserDetails {
     @OneToOne(mappedBy = "user")
     private Employee employee;
 
-    @OneToOne(mappedBy = "teacher")
+    @OneToOne(mappedBy = "user")
     private Teacher teacher;
 
     public Boolean isTeacher(){
