@@ -2,6 +2,9 @@ package gr.aueb.cf.schoolapp.service;
 
 import gr.aueb.cf.schoolapp.core.exceptions.AppObjectAlreadyExistsException;
 import gr.aueb.cf.schoolapp.core.exceptions.AppObjectInvalidArgumentException;
+import gr.aueb.cf.schoolapp.core.filters.Paginated;
+import gr.aueb.cf.schoolapp.core.filters.TeacherFilters;
+import gr.aueb.cf.schoolapp.core.specifications.TeacherSpecification;
 import gr.aueb.cf.schoolapp.dto.TeacherInsertDTO;
 import gr.aueb.cf.schoolapp.dto.TeacherReadOnlyDTO;
 import gr.aueb.cf.schoolapp.mapper.Mapper;
@@ -17,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,7 +28,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -108,6 +114,26 @@ public class TeacherService {
         return teacherRepository.findAll(pageable).map(mapper::mapToTeacherReadOnlyDTO);
     }
 
+    @Transactional
+    public Paginated<TeacherReadOnlyDTO> getTeachersFilterdPaginated(TeacherFilters filters){
+        var filtered = teacherRepository.findAll(getSpecsFromFilters(filters), filters.getPageable());
+        return new Paginated<>(filtered.map(mapper::mapToTeacherReadOnlyDTO));
+    }
+
+    @Transactional
+    public List<TeacherReadOnlyDTO> getTeachersFiltered(TeacherFilters filters){
+        return teacherRepository.findAll(getSpecsFromFilters(filters))
+                .stream().map(mapper::mapToTeacherReadOnlyDTO).collect(Collectors.toList());
+    }
+
+
+    private Specification<Teacher> getSpecsFromFilters(TeacherFilters filters){
+        return Specification
+                .where(TeacherSpecification.teacherStringFieldLike("uuid", filters.getUuid()))
+                .and(TeacherSpecification.teacherUserIsActive(filters.getActive()))
+                .and(TeacherSpecification.teacherUserVatIs(filters.getUserVat()))
+                .and(TeacherSpecification.teacherPersonalInfoAmkaIs(filters.getUserAmka()));
+    }
 
 
 }
